@@ -1,0 +1,502 @@
+---
+title: "COMP2200: Week 2"
+subtitle: "Intro to Statistics in Data Science"
+author: "A/Prof Benjamin Pope"
+institute: "School of Mathematical and Physical Sciences"
+date: 3 March 2025
+jupyter: conda-env-jax-py
+footer: ""
+format: 
+  mq-revealjs:
+    width: 1920
+    height: 1080
+    self-contained: true
+---
+
+
+##  
+::: {.columns .v-center-container}
+::: {.column width="35%"}
+![](_extensions/mq/MQ-diag-partial.png)
+:::
+<!-- 
+The above code needs an Internet connection to work. If you want to compile your work locally, a copy of the image can be found in the _extensions folder. 
+You can assessing it by adopting the following:
+![](_extensions/thomas-fung/mq/MQ-diag-partial.png) -->
+::: {.column width="65%"}
+[Welcome!]{.section-header-text}
+:::
+:::
+
+---
+
+### In these lectures
+
+#### Week 1 
+
+- Statistical basics
+	- Mean, median and mode (what is an average?)
+	- Standard deviation (how spread out are data?)
+- Statistical graphics 
+	- Histograms 
+	- Scatter plots
+	- Lines of Best Fit
+
+#### Week 2
+
+- Binomial distribution (many coin flips)
+- Bernoulli’s distribution (one coin flip)
+- Normal distribution (the bell curve)
+
+#### Week 3
+
+- Linear regression (fitting a line)
+- Logistic regression (predicting categories)
+
+---
+
+##  
+::: {.columns .v-center-container}
+::: {.column width="35%"}
+![](_extensions/mq/MQ-diag-partial.png)
+:::
+<!-- 
+The above code needs an Internet connection to work. If you want to compile your work locally, a copy of the image can be found in the _extensions folder. 
+You can assessing it by adopting the following:
+![](_extensions/thomas-fung/mq/MQ-diag-partial.png) -->
+::: {.column width="65%"}
+[Who am I?]{.section-header-text}
+:::
+:::
+
+---
+
+### My story
+
+::: {.columns}
+::: {.column width="65%"}
+- grew up in Sydney
+- undergrad, Honours **Sydney Uni** 2009-2012 
+	- in *physics*
+- exchange at the **University of California in Berkeley** (San Francisco)
+	- you should consider exchange too!
+- Doctorate at **Oxford** 2013-2017
+	- detecting planets with _Kepler_
+- Postdoc at **New York University** 2017-2020
+	- in data science *and* physics departments
+	- more _Kepler_ stuff, imaging planets, radio stars
+- Lecturer at the **University of Queensland** 2021-2024
+- Just started here - be patient!
+- Don't hesitate to ask anything - about stats, careers, or uni
+:::
+::: {.column width="35%"}
+![A/Prof Benjamin Pope (me)](profilepic.jpg)
+:::
+:::
+
+---
+
+### Why is an astronomer a statistician?
+
+::: {.columns}
+::: {.column width="50%"}
+In my research, I want to 
+
+- learn how **stars** work
+- detect **planets** around them
+- develop **technology** for doing this better
+:::
+::: {.column width="50%"}
+![James Webb Space Telescope](https://science.nasa.gov/wp-content/uploads/2023/06/jwst-spacecraftpotentialtargetsmontageflip-1200px-4-jpg.webp)
+:::
+:::
+
+All of these problems are _data analysis_ problems.
+
+---
+
+### What do we expect?
+
+- you may or may not have a stats background - this is fine!
+	- stats *is* data science and data science *is* stats - you want to learn this material well 
+- you may not have much experience with Python or Git - put work into getting good at these!
+- come to lectures & meet your peers - this is really valuable!
+- ask questions on the online discussion forum first, and feel free to email too - but it's great if we can answer a question lots of people might have
+
+---
+
+##
+::: {.columns .v-center-container}
+::: {.column width="35%"}
+![](_extensions/mq/MQ-diag-partial.png)
+:::
+::: {.column width="65%"}
+[What do we mean by statistics?]{.section-header-text}
+:::
+:::
+
+---
+
+### What is data science?
+
+<div class="fragment" style="font-size: 300px; font-weight: bold; text-align: center;">$$$</div>
+<div class="fragment" style="font-weight: bold; text-align: center;"><img width=700 src="trenchcoat.jpeg" alt="it's stats"><br>it's stats</div>
+
+---
+
+###  What do *you* mean by statistics?
+
+- the Census?
+- spreadsheets?
+- averages and standard deviations?
+- probability theory?
+- All of these things!
+
+---
+
+### What do *I* mean by statistics?
+
+Statistics is the science of **reasoning about uncertainty**.
+
+Data are always noisy and incomplete, and the art here is in properly accounting for this and getting *reliable, accurate, precise* results.
+
+---
+
+### 
+
+We'll study how to 
+
+- gather data;
+- visualize data; 
+- summarize data;
+- fit models to data; 
+- interpret the models; 
+- and make decisions.
+
+---
+
+## Today
+
+Let's start with how to *gather, visualize and summarize data*.
+
+--- 
+
+### Public Datasets
+
+There are a *lot* of data available in public sources. One is the [Australian Bureau of Statistics](https://tablebuilder.abs.gov.au/); we might use some of those later. 
+
+<div class="fragment">
+But another - which might help you get a job! - is [Kaggle](https://www.kaggle.com/), for data science competitions. They host public datasets and you can compete to produce the best models to explain and predict them.
+</div>
+
+---
+
+### House Price Data
+
+Let's start with something that's probably on everybody's minds - a [Kaggle dataset on Sydney house prices](https://www.kaggle.com/datasets/alexlau203/sydney-house-prices?resource=download). 
+
+This comes as a `.csv` file: **c**omma **s**eparated **v**alues. It looks like this:
+
+```
+price,date_sold,suburb,num_bath,num_bed,num_parking,property_size,type,suburb_population,suburb_median_income,suburb_sqkm,suburb_lat,suburb_lng,suburb_elevation,cash_rate,property_inflation_index,km_from_cbd
+530000,13/1/16,Kincumber,4,4,2,1351,House,7093,29432,9.914,-33.47252,151.40208,24,2,150.9,47.05
+525000,13/1/16,Halekulani,2,4,2,594,House,2538,24752,1.397,-33.21772,151.55237,23,2,150.9,78.54
+480000,13/1/16,Chittaway Bay,2,4,2,468,House,2028,31668,1.116,-33.32678,151.44557,3,2,150.9,63.59
+452000,13/1/16,Leumeah,1,3,1,344,House,9835,32292,4.055,-34.05375,150.83957,81,2,150.9,40.12
+365500,13/1/16,North Avoca,0,0,0,1850,Vacant land,2200,45084,1.497,-33.45608,151.43598,18,2,150.9,49.98
+...
+```
+
+---
+
+### Loading a CSV
+
+We're going to use [pandas](https://pypi.org/project/pandas/), an open source package for loading tables in Python; you'll use this a lot! 
+```{python}
+#| echo: true
+#| eval: true
+#| code-line-numbers: "1|2|3|4"
+import pandas as pd
+
+df = pd.read_csv('./domain_properties.csv') # df stands for DataFrame
+print(df)
+```
+
+<div class="fragment">So we see that a data frame has **columns**, each of which corresponds to some property of the data points, like `price`, `suburb`, etc. Every individual house sold is a **row** in this table.</div>
+
+---
+
+### Selecting Data
+
+Let's look at only those data from 2021:
+
+```{python}
+#| echo: true
+#| eval: true
+
+#| code-line-numbers: "1|2|3"
+df.year = pd.to_datetime(df.date_sold).dt.year # this is because dates in csv are strings but we want to extract year
+df21 = df[df.year==2021]
+print(df21)
+```
+
+--- 
+
+### Histograms
+
+Now let's make the most basic visualization of a dataset - a **histogram**.  
+<!-- From the Greek ἱστός, 'upright' or 'mast'. -->
+
+You should almost always do this!
+
+We are going to use another package you are going to learn inside and out: [matplotlib](https://matplotlib.org/).
+
+```{python}
+#| echo: true
+#| eval: true
+#| code-line-numbers: "1|2|4"
+import matplotlib.pyplot as plt # this makes plots in python
+plt.hist(df21.price/1e6,bins=100); # semicolon to suppress output; /1e6 to make readable
+
+plt.xlabel('House Price ($M)') # always label your axes!
+plt.ylabel('Number of Houses');
+```
+
+---
+
+### Filtering Data 
+
+There are some expensive houses in Sydney! Let's look at the lower end:
+
+```{python}
+#| echo: true
+#| eval: true
+#| code-line-numbers: "1|2|4"
+realistic = df21[df21.price < 5e6]
+plt.hist(realistic.price/1e6,bins=100); # semicolon to suppress output; /1e6 to make readable
+
+plt.xlabel('House Price ($M)') # always label your axes!
+plt.ylabel('Number of Houses');
+```
+
+--- 
+
+### Summary Statistics
+
+Let's talk about the *mean*, the *median* and *percentiles*, and the *mode* as ways of talking about a distribution.
+
+<div class="fragment">The *mean* is defined as 
+$$
+\langle{x}\rangle \equiv \frac{1}{N} \sum_{i=1}^{N} x_i
+$$
+
+ie this is the contribution to the total, per item</div>
+
+<div class="fragment">The *median* is the value of $x$ such that 50% of samples are higher, and 50% are lower: i.e. the *middle* of the distribution. More generally, a *percentile* is defined so that (say) 90% of samples are less than the 90th percentile.</div>
+
+<div class="fragment">The *mode* is the most common value.</div>
+
+---
+
+### NumPy 
+
+For doing maths like this on data, we want to use [numpy](https://numpy.org/), the standard Python package for numerical calculations:
+
+```{python}
+#| echo: true
+#| eval: true
+import numpy as np # always as np!
+```
+
+---
+
+### Summary Statistics
+
+Let's plot the same histogram as above, but showing the summary statistics.
+
+```{python}
+#| echo: true
+#| eval: true
+
+h = plt.hist(realistic.price/1e6,bins=100); # semicolon to suppress output; /1e6 to make readable
+
+plt.xlabel('House Price ($M)') # always label your axes!
+plt.ylabel('Number of Houses')
+
+plt.axvline(np.mean(realistic.price/1e6),
+	ls='-',lw=5,color='C0',label = 'Mean')
+plt.axvline(np.median(realistic.price/1e6),
+	ls=':',lw=5,color='C1',label = 'Median')
+
+for percentile in [10, 90]: # this is a for loop for doing multiple things
+	plt.axvline(np.percentile(realistic.price/1e6,percentile),
+			ls=':',color='C1', lw=3,label = f'{percentile}th Percentile') # this is an f-string for printing things
+
+mode = np.argmax(h[0])
+mode_price = h[1][mode]
+plt.axvline(mode_price, ls='--', color='C2',lw=5, label='Mode')
+
+plt.legend()
+```
+
+---
+
+### Relationships
+
+The core thing we want to do in data science is to make _inferences_ from data. This means finding relationships in data to help us predict or understand what is happening.
+
+Side note: _infer_ vs _imply_. What's the difference?
+
+<div class="fragment">Data _imply_ things _to us_.</div>
+<div class="fragment">We _infer_ things _from data_.</div>
+
+---
+
+### Trend Lines
+
+Let's see if we can plot a trend line for prices over time:
+
+```{python}
+#| echo: true
+#| eval: true
+#| code-line-numbers: "1|2|4|10"
+years = np.arange(2016,2022,1) # integers up to 2021 - yes 2021
+means, lowers, uppers = [], [], [] # init empty lists
+
+for year in years: 
+	thisdf = df[df.year==year]
+	means.append(np.mean(thisdf.price))
+	lowers.append(np.percentile(thisdf.price,25))
+	uppers.append(np.percentile(thisdf.price,75))
+# make these into arrays
+means, lowers, uppers = np.array(means), np.array(lowers), np.array(uppers)
+```
+
+---
+
+### Plot this
+
+Now we can see a (depressing) trend with time:
+
+```{python}
+#| echo: true
+#| eval: true
+#| code-line-numbers: "2"
+plt.plot(years, means/1e6, 'C2--',label='Mean Price')
+plt.fill_between(years, lowers/1e6, uppers/1e6, color='C2', alpha=0.2,label='25-75 percentile')
+
+plt.ylabel('Price ($M)')
+plt.xlabel('Year')
+plt.xticks(years)
+plt.title('Sydney House Prices in 2018-2021')
+plt.xlim(years.min(),years.max())
+plt.legend(loc='upper left');
+```
+
+---
+
+### Scatter Plots
+
+What if we want to see how multiple things relate, not just time?
+
+We can use a *scatter plot*, in which each individual data point is rendered as a dot on whatever axes we like. Let's see how property size relates to price:
+
+```{python}
+#| echo: true
+#| eval: true
+houses = realistic[realistic.type == 'House']
+
+plt.scatter(houses['property_size'], houses['price']/1e6, alpha=0.5, color='C2',label='House')
+
+plt.xlim(0,750)
+plt.xlabel('Property Size (sqm)')
+plt.ylabel('Price ($M)')
+plt.legend();
+```
+
+---
+
+### Multiple Datasets
+
+We can do the same comparison for apartments and terraces and overlay them:
+```{python}
+#| echo: false
+#| eval: true
+apartments = realistic[realistic.type == 'Apartment / Unit / Flat']
+terraces = realistic[(realistic.type == 'Terrace') + (realistic.type == 'Townhouse')]
+houses = realistic[realistic.type == 'House']
+
+plt.scatter(houses['property_size'], houses['price']/1e6, alpha=0.5, color='C2',label='House')
+plt.scatter(apartments['property_size'], apartments['price']/1e6, alpha=1, color='C3',label='Apartment')
+plt.scatter(terraces['property_size'], terraces['price']/1e6, alpha=1., color='C1',  label='Terrace')
+
+plt.xlim(0,750)
+plt.xlabel('Property Size (sqm)')
+plt.ylabel('Price ($M)')
+plt.legend();
+```
+
+
+---
+
+### Coloured Scatter Plots
+
+We don't have to be restricted to just representing 2 dimensions: we can even put a colour map on the data to represent a third quantity!
+
+```{python}
+#| echo: true
+#| eval: true
+
+houses.sort_values('km_from_cbd', inplace=True, ascending=True)
+plt.scatter(houses['property_size'], houses['price']/1e6, alpha=0.8, s=4,c=houses['km_from_cbd'],
+            label='House',cmap='inferno')
+plt.colorbar(label='Distance from CBD (km)')
+plt.xlim(0,2000)
+plt.xlabel('Property Size (sqm)')
+plt.ylabel('Price ($M)')
+plt.title('Freestanding House Prices');
+```
+
+---
+
+### Fitting a Line to Data
+
+The most important thing in your whole job will be _learning_ from data: finding a mathematical representation that explains current data and predicts new data.
+
+This can be as simple as _fitting a line_.
+
+In the next lectures, we're going to learn how to do this: but let's see what we mean by that!
+
+```{python}
+#| echo: false
+#| eval: true
+
+x = np.random.rand(200)
+xx = np.linspace(-0.1,1.1,10000)
+y = 0.5*x + 0.1 + 0.2*np.random.randn(len(x))
+plt.plot(x,y,'.',label='Data')
+plt.plot(xx,0.5*xx+0.1,'--',label='Line of best fit')
+plt.xlabel('Time')
+plt.ylabel('Student Sleepiness')
+```
+
+I think that's time to end the lecture!
+
+---
+
+### Recap
+
+Today we've learned about:
+
+- loading data in Python
+- summary statistics
+- histograms
+- scatter plots
+
+Next week we're going to learn:
+
+- linear regression
+- distributions:
+	- normal
+	- uniform
+	- coin-toss

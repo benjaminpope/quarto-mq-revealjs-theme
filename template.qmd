@@ -165,7 +165,7 @@ knitr::include_graphics("https://github.com/matt-dray/quartostamp/raw/main/man/f
 
 
 ```{r, eval=FALSE, echo=TRUE}
-# install.packages("remotes")  # if not yet installed
+install.packages("remotes")  # if not yet installed
 remotes::install_github("matt-dray/quartostamp")
 ```
 
