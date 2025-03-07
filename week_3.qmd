@@ -1,9 +1,9 @@
 ---
-title: "COMP2200: Week 2"
+title: "COMP2200: Week 3"
 subtitle: "Intro to Statistics in Data Science"
 author: "A/Prof Benjamin Pope"
 institute: "School of Mathematical and Physical Sciences"
-date: 3 March 2025
+date: 10 March 2025
 jupyter: conda-env-jax-py
 footer: ""
 format: 
@@ -32,7 +32,7 @@ You can assessing it by adopting the following:
 
 ### In these lectures
 
-#### Week 1 
+#### Week 3
 
 - Statistical basics
 	- Mean, median and mode (what is an average?)
@@ -40,20 +40,21 @@ You can assessing it by adopting the following:
 - Statistical graphics 
 	- Histograms 
 	- Scatter plots
-	- Lines of Best Fit
+- Distributions
+	- random number generation
+	- uniform, binomial distributions
+	- central limit theorem and the normal distribution
+	- multivariate distributions
 
-#### Week 2
-
-- Binomial distribution (many coin flips)
-- Bernoulli’s distribution (one coin flip)
-- Normal distribution (the bell curve)
-
-#### Week 3
+#### Week 4
 
 - Linear regression (fitting a line)
 - Logistic regression (predicting categories)
 
----
+#### Week 5
+
+- Data privacy and ethics
+- Software Engineering for Data Science
 
 ##  
 ::: {.columns .v-center-container}
@@ -458,32 +459,7 @@ plt.title('Freestanding House Prices');
 ```
 
 ---
-
-### Fitting a Line to Data
-
-The most important thing in your whole job will be _learning_ from data: finding a mathematical representation that explains current data and predicts new data.
-
-This can be as simple as _fitting a line_.
-
-In the next lectures, we're going to learn how to do this: but let's see what we mean by that!
-
-```{python}
-#| echo: false
-#| eval: true
-
-x = np.random.rand(200)
-xx = np.linspace(-0.1,1.1,10000)
-y = 0.5*x + 0.1 + 0.2*np.random.randn(len(x))
-plt.plot(x,y,'.',label='Data')
-plt.plot(xx,0.5*xx+0.1,'--',label='Line of best fit')
-plt.xlabel('Time')
-plt.ylabel('Student Sleepiness')
-```
-
-I think that's time to end the lecture!
-
----
-
+=
 ### Recap
 
 Today we've learned about:
@@ -492,11 +468,13 @@ Today we've learned about:
 - summary statistics
 - histograms
 - scatter plots
-
-Next week we're going to learn:
-
-- linear regression
 - distributions:
 	- normal
 	- uniform
 	- coin-toss
+
+Next week we're going to learn:
+
+- linear regression
+- logistic regression 
+
