@@ -4,7 +4,7 @@ subtitle: "Intro to Statistics in Data Science"
 author: "A/Prof Benjamin Pope"
 institute: "School of Mathematical and Physical Sciences"
 date: 10 March 2025
-jupyter: conda-env-jax-py
+jupyter: sklearn
 footer: ""
 format: 
   mq-revealjs:
@@ -459,7 +459,240 @@ plt.title('Freestanding House Prices');
 ```
 
 ---
-=
+
+### Pair Plots
+
+Sometimes we want to visualize how multiple parameters relate to each other. 
+
+One of the best ways to do ths is with a *pair plot*. You can use 
+
+- [`corner.py`](https://corner.readthedocs.io/en/latest/), 
+- [`pairplots`](), or what we'll use here, 
+- [`seaborn.pairplot`](https://seaborn.pydata.org/generated/seaborn.pairplot.html)
+
+
+---
+
+### Pair Plots
+
+Along the diagonal is a histogram of each data column, representing the *marginal distribution*.
+
+Off-diagonal, we do a scatterplot of each column against each other, representing the *joint distributions*.
+
+```{python}
+#| echo: true
+#| eval: true
+import seaborn as sns
+
+sns.pairplot(houses[['price','property_size','km_from_cbd','suburb_median_income']])
+``` 
+
+---
+
+### Kernel Density Estimation
+
+We can make this smoother for many datapoints with *kernel density estimation*, where we smooth a scatterplot by (say) adding a Gaussian kernel at the location of each datapoint
+
+```{python}
+#| echo: true
+#| eval: true
+import seaborn as sns
+
+sns.pairplot(houses[['price','property_size','km_from_cbd','suburb_median_income']],kind='kde')
+``` 
+
+
+---
+
+### What is probability 
+
+This leads us to the foundational topic of statistics: *probability and distributions*. 
+
+What is a probability?
+
+- Frequentist: a probability is how often an event occurs if you repeat experimental conditions very many (limit $\rightarrow \infty$) times
+- Bayesian: a probability is assigning a real number to how much you believe something is true or going to occur
+- Mathematical: : "At a purely formal level, one could call probability theory the study of measure spaces with total measure one, but that would be like calling number theory the study of strings of digits which terminate." - [Terry Tao](https://terrytao.wordpress.com/2010/01/01/254a-notes-0-a-review-of-probability-theory/)
+
+Turns out these are all equivalent - any of them implies the other! 
+
+---
+
+### Probability distributions
+
+A **distribution** is a function that assigns probabilities to events. 
+
+It can be 
+- discrete (ie integers), like outcomes of coin tosses, dice rolls, card games; categories; sports, counts of people or cars, or even life and death
+- continuous, like people's heights, or masses of stars, or money...
+
+Following the frequentist idea, *if you have enough data, a histogram of your measurements should look like the probability distribution*. This is why we make these plots!
+
+---
+
+### Terminology: Random Variables
+
+When you have a variable that has some probability distribution, we call this a *random variable*. This means it doesn't have a definite value, like $x=5$, but instead that we use $x$ to represent the outcome of some random process that we don't know, and when we "draw a sample" to get a definite value, it has some probability distribution.
+
+---
+
+### Continuous Distributions
+
+When you have a continuous distribution, it means that if you *integrate* it from $a$ to $b$, that is the probability of the random variable lying between $a$ and $b$. 
+
+```{python}
+#| echo: false
+#| eval: true
+
+xx = np.linspace(-1,1,1000)
+yy = np.exp(-xx**2)
+mm = np.abs(xx-0.3) < 0.1
+
+plt.plot(xx,yy,'-')
+plt.fill_between(xx[mm],yy[mm],color='C1')
+plt.xlabel('X')
+plt.ylabel('p(X)')
+
+```
+
+---
+
+### Pseudo-random Numbers
+
+Let's start with continuous distributions, and the simplest one of all: the uniform distribution.
+
+$$
+x \sim \text{Uniform}(0,1)
+$$
+
+We can simulate this in Python very easily, with `np.random.rand`. Functions like this generate *pseudo*-random numbers, which are really made with a deterministic algorithm but are hard to predict without running the algorithm.
+
+```{python}
+#| echo: true
+#| eval: true
+for n in [100,10000,1000_000]:
+	plt.hist(np.random.rand(n),label=str(n),
+	histtype='step',density=True,lw=5)
+
+plt.plot([0,1],[1,1],'-',label='Uniform')
+plt.xlim(0,1)
+plt.xlabel(r'$x$')
+plt.ylabel(r'$p(x)$')
+plt.legend()
+```
+
+---
+
+### Adding Variables
+
+What happens if we add together (say) 1 million uniform samples, in batches of 2?
+```{python}
+#| code-fold: true
+#| eval: true
+
+n_samples = 1_000_000
+batch_size = 2
+
+# Generate random samples
+samples = np.random.rand(n_samples)
+
+# Reshape into batches and sum each batch
+batches = samples.reshape(-1, batch_size)
+means = batches.sum(axis=1)/batch_size
+
+# Plot the histogram of the sums
+plt.hist(means, bins=100, density=True, histtype='step', lw=5)
+plt.xlabel('Mean of 2 Uniform(0,1) samples')
+plt.ylabel('Density')
+plt.title('Distribution of Means of Uniform Samples')
+plt.show()
+```
+
+---
+
+### Adding Variables
+
+What happens if we add together (say) 1 million uniform samples, in batches of 3?
+```{python}
+#| code-fold: true
+#| eval: true
+
+n_samples = 1_000_000+2
+batch_size = 3
+
+# Generate random samples
+samples = np.random.rand(n_samples)
+
+# Reshape into batches and sum each batch
+batches = samples.reshape(-1, batch_size)
+means = batches.sum(axis=1)/batch_size
+
+# Plot the histogram of the sums
+plt.hist(means, bins=100, density=True, histtype='step', lw=5)
+plt.xlabel('Mean of 3 Uniform(0,1) samples')
+plt.ylabel('Density')
+plt.title('Distribution of Means of Uniform Samples')
+plt.show()
+```
+
+---
+
+### Adding Variables
+
+What happens if we add together (say) 1 million uniform samples, in batches of 100?
+```{python}
+#| code-fold: true
+#| eval: true
+
+from scipy import stats 
+
+n_samples = 1_000_000
+batch_size = 20
+
+# Generate random samples
+samples = np.random.rand(n_samples)
+
+# Reshape into batches and sum each batch
+batches = samples.reshape(-1, batch_size)
+means = batches.sum(axis=1)/batch_size # mean
+
+# Plot the histogram of the sums
+plt.hist(means, bins=100, density=True, histtype='step', lw=5)
+plt.xlabel('Mean of 100 Uniform(0,1) samples')
+plt.ylabel('Density')
+plt.title('Distribution of Mean of Uniform Samples')
+
+xx = np.linspace(0,1,1000)
+yy = stats.norm.pdf(xx, loc=0.5, scale=1/np.sqrt(12)/np.sqrt(batch_size))
+
+plt.plot(xx,yy,label='Normal(μ,σ/√n)',lw=2)
+plt.legend()
+```
+
+--- 
+
+### The Central Limit Theorem
+
+**"The law would have been personified by the Greeks and deified, if they had known of it." - Galton, quoted in Newman, *The World of Mathematics* (1956).** \
+
+If you start with any distribution with finite mean $\mu$ and variance $\sigma^2$:\
+
+the distribution of the mean of $n$ samples tends as $n \rightarrow \infty$ to\
+
+$$
+x \sim \mathscr{N}(\mu, \frac{\sigma}{\sqrt{n}})
+$$
+
+---
+
+### Why does this matter?
+
+The central limit theorem means that in a huge range of circumstances, you can treat data as having Gaussian statistics, in which each datapoint is characterised just by a mean and by its uncertainty $\sigma$. 
+
+This is going to underpin the least squares methods next week!
+
+---
+
 ### Recap
 
 Today we've learned about:
@@ -477,4 +710,3 @@ Next week we're going to learn:
 
 - linear regression
 - logistic regression 
-

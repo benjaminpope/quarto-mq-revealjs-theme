@@ -1,10 +1,10 @@
 ---
 title: "COMP2200: Week 4"
-subtitle: "Intro to Statistics in Data Science"
+subtitle: "Fitting Models to Data"
 author: "A/Prof Benjamin Pope"
 institute: "School of Mathematical and Physical Sciences"
 date: 17 March 2025
-jupyter: conda-env-jax-py
+jupyter: sklearn
 footer: ""
 format: 
   mq-revealjs:
@@ -12,6 +12,25 @@ format:
     height: 1080
     self-contained: true
 ---
+
+```{python}
+#| echo: false
+#| eval: true
+
+import numpy as np
+import matplotlib.pyplot as plt
+from glob import glob
+import pandas as pd 
+import seaborn as sns
+from scipy import stats
+sns.set_theme(style="ticks")
+
+plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['font.size'] = 32
+plt.rcParams['xtick.labelsize']=24
+plt.rcParams['ytick.labelsize']=24
+plt.rcParams['axes.labelsize']=32
+```
 
 
 ##  
@@ -44,7 +63,7 @@ You can assessing it by adopting the following:
     - Bernoulli (coin-flip) distribution
     - log-odds and logistic regression
 
-
+---
 
 ### Fitting a Line to Data
 
@@ -55,51 +74,720 @@ This can be as simple as _fitting a line_.
 ```{python}
 #| echo: false
 #| eval: true
+#| fig-align: 'center'
 
-x = np.random.rand(200)
-xx = np.linspace(-0.1,1.1,10000)
-y = 0.5*x + 0.1 + 0.2*np.random.randn(len(x))
+x = np.random.rand(200)+6
+xx = np.linspace(-0.1,1.1,10000) + 6.0
+y = 0.5*(x-6) + 0.1 + 0.05*np.random.randn(len(x))
 plt.plot(x,y,'.',label='Data')
-plt.plot(xx,0.5*xx+0.1,'--',label='Line of best fit')
-plt.xlabel('Time (h)')
+plt.plot(xx,0.5*(xx-6)+0.1,'--',label='Line of best fit')
+plt.xlabel('Time (PM)')
 plt.ylabel('Student Sleepiness')
-plt.xlim(0,1);
+plt.xlim(6, 7);
+plt.ylim(0,1)
 ```
 
-I think that's time for a break!
+---
+
+### An example dataset: Fish Market
+
+We have a dataset with some wonderfully linear trends in it, that people often use for ML teaching: the ["fish market" dataset from Kaggle](https://www.kaggle.com/datasets/vipullrathod/fish-market/data). These have 3D measurements of fish of different species, including multiple definitions of length that should be *very* linear.
+
+You can download these automatically:
+
+```{python}
+#| eval: true
+#| echo: true
+import kagglehub
+
+# Download latest version
+path = kagglehub.dataset_download("vipullrathod/fish-market")
+
+print("Path to dataset files:", path)
+```
+
+You need to [set up an API key](https://www.kaggle.com/docs/api#authentication) to do this.
 
 ---
 
-### The Expanding Universe
+### Visualize the data
 
-![Expansion of the Universe](https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/CMB_Timeline300_no_WMAP.jpg/800px-CMB_Timeline300_no_WMAP.jpg)
+```{python}
+#| eval: true
+#| echo: true
+
+fname = glob(path + "/*.csv")[0]
+df = pd.read_csv(fname)
+df.head()
+```
 
 ---
 
-### Hubble's Original Data
+###  Visualize the data
 
-Here are some distances from Edwin Hubble's [1929 paper](https://www.pnas.org/doi/pdf/10.1073/pnas.15.3.168) discovering the expansion of the universe. 
+```{python}
+#| eval: true
+#| echo: false
+#| fig-align: 'center'
 
-<img src="hubble.png" alt="Hubble's Data" style="width: 500px;"/>
+pair = sns.pairplot(df,hue="Species",kind='scatter')
+```
 
 ---
 
-### Load and plot Hubble original data
+### Visualize the data
+
+
+```{python}
+#| eval: true
+#| echo: false
+#| fig-align: 'center'
+
+pair = sns.pairplot(df[df.Species=='Perch'],hue="Species",kind='scatter')
+```
+
+---
+
+### Fitting a line with sklearn 
+
+```{python}
+#| eval: true
+#| echo: true
+from sklearn.model_selection import train_test_split
+
+train, test = train_test_split(df[df.Species=='Perch'], test_size=0.2)
+```
+
+Always pre-process your data so you have a training set and a test set! Otherwise you are liable to *over-fitting* your data.
+
+---
+
+### Normalization
+
+Data can include very large and very small numbers - and this might differ column to column (eg house prices in dollars ($\sim$ millions) and areas in $\sim 10\text{s}$ of square metres). We want to normalize them to be of order unity, so that when we do maths with them our models will have appropriate normalisations straightforwardly:
+
+```{python}
+#| eval: true
+#| echo: true
+from sklearn import preprocessing
+
+scaler = preprocessing.MinMaxScaler()
+params = ['Weight','Length1','Length2','Length3','Height','Width']
+
+scaler.fit(train[params])
+train[params] = scaler.transform(train[params])
+test[params] = scaler.transform(test[params])
+train.head()
+```
+
+---
+
+### Prediction in Data Science
+
+Most questions you ever encounter will be of the form: given these data, can you *predict* new outputs given some metadata?
+
+In the case where two things are *proportional*, this is easy:
+
+```{python}
+#| eval: true
+#| echo: true
+from sklearn.linear_model import LinearRegression
+
+model = LinearRegression()
+X_train, y_train = train[["Length1"]], train["Height"]
+model.fit(X_train, y_train);
+```
+
+```{python}
+#| eval: true
+#| echo: false
+#| fig-align: center
+
+xpred = np.linspace(-0.05, 1.05, 100)
+X_pred = xpred[:, np.newaxis]
+y_pred = model.predict(X_pred)
+
+fig = plt.figure(figsize=(9.0,6.0))
+plt.plot(X_train,y_train,'.',markersize=6)
+plt.plot(xpred, y_pred, '-')
+plt.xlim(-0.05, 1.05)
+plt.xlabel('Normalized Length1')
+plt.ylabel('Normalized Height');
+```
+
+---
+
+##  
+::: {.columns .v-center-container}
+::: {.column width="35%"}
+![](_extensions/mq/MQ-diag-partial.png)
+:::
+<!-- 
+The above code needs an Internet connection to work. If you want to compile your work locally, a copy of the image can be found in the _extensions folder. 
+You can assessing it by adopting the following:
+![](_extensions/thomas-fung/mq/MQ-diag-partial.png) -->
+::: {.column width="65%"}
+[Linear Regression: The Maths]{.section-header-text}
+:::
+:::
+
+
+---
+
+
+### Least Squares = Normal Statistics
+
+
+- Suppose you have a *predictor* or *metadata* -- an independent variables $x$ -- which has very little uncertainty
+- and you are trying to model a *dependent variable* $y$ which is noisy, as 
+
+$$
+y =  mx + b + \epsilon
+$$
+
+where $\epsilon$ is noise, $X$ is called a "design matrix", and $w$ are coefficients.
+
+We want to *learn* $w$.
+
+---
+
+### Bayesian Inference: Conditional Probability
+
+Fundamentally the problem of *inference* is about reasoning from data to the model that caused them. We can write Bayes' theorem for conditional probability,
+
+$$
+\color{teal}{p(\text{model}|\text{data})} = \frac{\color{gold}{p(\text{data}|\text{model})} \cdot \color{blue}{p(\text{model})}}{\color{gray}{p(\text{data})}}
+$$
+
+- the <font color='blue'>prior</font> is what we thought before, 
+- the <font color='gold'>likelihood</font> is the conditional probabilty of getting the data, 
+- the <font color='gray'>evidence</font> or "marginal likelihood" is a normalization constant that is hard to calculate, and 
+- the <font color='teal'>posterior</font> is what we are trying to infer: our new belief about the model given the data.
+
+---
+
+### Linear Model: Inference
+
+We want to be able to write down the likelihood of getting our data $Y$ given a model, so that if we start off with (say) a uniform prior on the other parameters we can reason to the best fitting parameters.
+
+---
+
+### Normal Likelihood
+
+- Central limit theorem
+    - *Frequentist View*: Realistic sources of error $\epsilon$ are normally distributed because they are sums of many processes.
+    - *Bayesian View*: if you only know a point estimate and and uncertainty, the normal distribution is the Maximum Entropy distribution
+
+So we can assume $\epsilon \sim \mathscr{N}(0, \sigma^2)$.
+
+---
+
+### Multivariate Normal 
+
+In general you can have *many* independent variables $x_1, x_2...$ that you collect into a matrix $X$ such that
+
+$$
+y =  \mathbf{X}\cdot \mathbf{w} + \epsilon
+$$
+
+where
+
+$$
+\mathbf{X} = \begin{bmatrix}
+1 & x_{1,1} & x_{1,2} & ... \\
+1 & x_{2,1} & x_{2,2} & ... \\
+\vdots & \vdots & \vdots \\
+1 & x_{n,1} & x_{n,2} & ...
+\end{bmatrix}
+$$
+
+$X$ is called a "design matrix", and $w$ are coefficients. 
+
+The column of ones is there to allow us to have a constant term -- an intercept $b$.
+
+---
+
+### Linear Algebra Solution
+
+The simplest way to do this would be to invert the matrix $X$ 
+
+$$
+\mathbf{w} = \mathbf{A}^{-1}\mathbf{Y}
+$$
+
+but you can't if there are more independent than dependent variables, because then the problem is over-constrained.
+
+Instead we have an **ordinary least squares** solution
+
+$$
+\mathbf{w} = (\mathbf{X}^T\mathbf{X})^{-1} \mathbf{X}^T \mathbf{y}
+$$
+
+---
+
+### Generalized Least Squares
+
+To make this work with data with individual uncertainties we introduce the *covariance matrix* $C$ to represent the uncertainties $\sigma_i$ on each datapoint:
+
+$$
+\mathbf{C} = \begin{bmatrix}
+\sigma_1^2 & 0  & \cdots & 0 \\
+0 & \sigma_2^2  & \cdots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 &  \cdots & \sigma_n^2
+\end{bmatrix}
+$$
+
+The simplest expression that is linear, has the correct dimensions, and weights data of different sensitivities inversely with their uncertainty is
+
+$$
+\mathbf{w} = \begin{bmatrix} m \\ b \end{bmatrix} = [\mathbf{X}^T \mathbf{C}^{-1} \mathbf{X}]^{-1} \mathbf{X}^T \mathbf{C} \cdot \mathbf{Y}
+$$
+
+---
+
+### Probability 
+
+It can be shown that this minimizes 
+
+$$
+\chi^2 \equiv \sum_{\forall i} \frac{(y_i - f(x_i))^2}{\sigma_i^2} = [\mathbf{Y}-\mathbf{X}\cdot\mathbf{w}]^T \mathbf{C}^{-1} [\mathbf{Y}-\mathbf{X}\mathbf{w}]
+$$
+
+This is actually a Gaussian log-likelihood! For a multivariate normal distribution, the log likelihood is the quadratic form
+
+$$
+p(x) \sim \mathscr{N}(\mu, \mathbf{C}) \rightarrow \log p(x) \propto (\mathbf{x}-\mu) \mathbf{C}^{-1} (\mathbf{x}-\mu)^T
+$$
+
+which is what we have above! This is why we call it *least-squares* regression: it minimizes the sum of the square differences between data and model, normalized by the uncertainty on each datapoint.
+
+---
+
+### Implementation Under the Hood
+
+Here's how you would do what `sklearn` does from scratch in `numpy`:
+
+```{python}
+#| eval: true
+#| echo: true
+x = np.array(train["Length1"])
+design_matrix = np.vander(x, 2) # this makes a matrix of polynomial terms 
+# in x from constant, linear, quadratic... 
+# we go up to linear!
+print(design_matrix[:5])
+y = train["Height"]
+
+b, loss, rank, s  = np.linalg.lstsq(design_matrix, y) 
+# this does the whole expression in one go!
+
+residuals = y - design_matrix @ b
+```
+
+
+---
+
+### Linear doesn't just mean lines!
+
+The design matrix could be many things - terms of a polynomial, a Fourier series of sines and cosines, you name it.
+
+We will do this in the SGTA!
+
+---
+
+### Uncertainty in the inference
+
+It is just as important to know what the *uncertainty* on your inferred parameters are - we naturally get
+
+$$
+\mathbf{C}_w \equiv \begin{bmatrix} \sigma_b^2 & \sigma_{mb} \\ \sigma_{mb} & \sigma_{m}^2 \end{bmatrix} = [\mathbf{X}^T \mathbf{C}_y^{-1} \mathbf{X}] ^{-1}
+$$
+
+which means that if you want to quantify the uncertainty on your model you can draw samples from a multivariate normal to be your uncertain coefficients
+
+---
+
+### Uncertainty in the Inference 
 
 ```{python}
 #| echo: true
 #| eval: true
 
-data = pd.read_csv('hubble.txt')
-d, v = data.r, data.v
-d_err = 0.1
-plt.errorbar(d,v,xerr=d_err,fmt='o',color='k')
-plt.xlabel('Distance (Mpc)')
-plt.ylabel('RV (km/s)');
+uncertainty = np.std(residuals) * np.linalg.inv(design_matrix.T @ design_matrix)
+for j in range(100):
+    bb = stats.multivariate_normal.rvs(b, uncertainty) 
+    ...
+```
+
+```{python}
+#| echo: false
+#| eval: true
+#| fig-align: center
+
+plt.plot(x, y,'.')
+
+xx = np.linspace(-0.05,1.05,100)
+dd = np.vander(xx, 2)
+plt.plot(xx, b @ dd.T, '-')
+
+# plt.plot(x, b @ design_matrix.T, '-')
+for j in range(100):
+    bb = stats.multivariate_normal.rvs(b, uncertainty)
+    plt.plot(xx, bb @ dd.T, '-', alpha=0.05,color='C1')
+plt.xlim(-0.05, 1.05)
+plt.xlabel('Normalized Length1')
+plt.ylabel('Normalized Height');
+```
+
+
+---
+
+### Assessing Goodness-of-Fit
+
+- **R-squared (Coefficient of Determination)**: Measures the proportion of the variance in the dependent variable that is predictable from the independent variables. Values range from 0 to 1, with higher values indicating a better fit.
+- **Reduced Chi-Squared**: The chi-squared statistic divided by the degrees of freedom (number of observations minus number of fitted parameters). It indicates how well the model fits the data:
+    - values $>> 1$ indicate the data are under-fit badly
+    - values $\sim 1$ are good
+    - values $<< 1$ indicate the data are over-fit
+- **Root Mean Squared Error (RMSE)**: Lower values better - this is what we are fitting with least squares!
+- **Median Absolute Error (MAE)**: median of absolute values of residuals. This is more robust to outliers.
+
+---
+
+### Anscombe's Quartet
+
+These datasets have all the same moments and trend line!
+
+```{python}
+#| echo: false
+#| eval: true
+#| fig-align: center
+
+# Load the example dataset for Anscombe's quartet
+df = sns.load_dataset("anscombe")
+
+# Show the results of a linear regression within each dataset
+g = sns.lmplot(
+    data=df, x="x", y="y", col="dataset", hue="dataset",
+    col_wrap=2, palette="muted", ci=None,
+    height=4.5, scatter_kws={"s": 50, "alpha": 1}
+)
+g.set_titles(col_template="")
+
 ```
 
 ---
 
-### Fitting a line to data
+### Datasaurus Dozen
 
-Our model for a uniformly expanding universe is that $v = H_0 d$. In your lectures so far you've learnt about outlier-resistant methods for fitting lines to data; we're going to look at something more general and *statistical*: ordinary least squares. 
+```{python}
+#| echo: false
+#| eval: true
+#| fig-align: center
+
+dinos = pd.read_csv('DatasaurusDozen.tsv',delimiter='\t')
+dinos = dinos[dinos['dataset'] != 'wide_lines']
+
+g = sns.lmplot(data=dinos, x="x", y="y", col="dataset", hue="dataset", line_kws={'color': '#003f5c'}, col_wrap=4, ci=None, height=3.5)
+
+g.set_titles(col_template="");
+```
+
+---
+
+##  
+::: {.columns .v-center-container}
+::: {.column width="35%"}
+![](_extensions/mq/MQ-diag-partial.png)
+:::
+<!-- 
+The above code needs an Internet connection to work. If you want to compile your work locally, a copy of the image can be found in the _extensions folder. 
+You can assessing it by adopting the following:
+![](_extensions/thomas-fung/mq/MQ-diag-partial.png) -->
+::: {.column width="65%"}
+[Categorical Data: Logistic Regression]{.section-header-text}
+:::
+:::
+
+---
+
+### Coin Flips: the Bernoulli Distribution
+
+The Bernoulli distribution is the simplest distribution of them all: you can use it to model coin flips or anything else with a binary outcome, like {dead,alive} or {asleep, awake}.
+
+We write it as 
+
+$$
+x \sim \text{Bernoulli}(\theta)
+$$
+
+such that
+
+$$
+x = \begin{cases}
+0 & \text{ with probability } \theta, \\
+1 & \text{ with probability } (1-\theta)
+\end{cases}  
+$$
+
+
+---
+
+### Regression over Categories
+
+0 = awake, 1 = asleep.
+
+```{python}
+#| echo: false
+#| eval: true
+#| fig-align: 'center'
+
+xx = np.linspace(7,8,100)
+x = np.random.rand(100)+7
+turnover = 7.5
+prob = 1/(1+np.exp((turnover-x)*20))
+inputs = np.random.rand(100)
+y = (inputs < prob).astype(int)
+plt.plot(xx,1/(1+np.exp((turnover-xx)*20)),'-',label='Probability of Sleeping')
+plt.legend(fontsize=24)
+plt.xlabel('Time')
+plt.xticks([7,7.5,8],['7pm','7:30pm','8pm']);
+```
+
+---
+
+### Regression over Categories
+
+0 = awake, 1 = asleep.
+
+```{python}
+#| echo: false
+#| eval: true
+#| fig-align: 'center'
+
+xx = np.linspace(7,8,100)
+x = np.random.rand(100)+7
+turnover = 7.5
+prob = 1/(1+np.exp((turnover-x)*20))
+inputs = np.random.rand(100)
+y = (inputs < prob).astype(int)
+plt.plot(xx,1/(1+np.exp((turnover-xx)*20)),'-',label='Probability of Sleeping')
+plt.plot(x,y,'.',label='Asleep?',markersize=10)
+plt.legend(fontsize=24)
+plt.xlabel('Time')
+plt.xticks([7,7.5,8],['7pm','7:30pm','8pm']);
+```
+
+---
+
+### Logistic Regression in sklearn
+
+How would we *fit* something like this? 
+
+```{python}
+#| eval: true
+#| echo: true
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression()
+model.C = 1e5 # inverse regularization parameter
+X_train = x[:,np.newaxis]
+y_train = y
+model.fit(X_train, y_train);
+```
+
+```{python}
+#| eval: true
+#| echo: false
+
+xpred = np.linspace(7, 8, 100)
+X_pred = xpred[:, np.newaxis]
+y_pred = model.predict_proba(X_pred)[:,1]
+
+plt.plot(x, y,'.')
+plt.plot(xpred, y_pred, '-',label='Logistic Regression')
+plt.plot(xx,1/(1+np.exp((turnover-xx)*30)),'-',label='Injected Probability')
+plt.xlabel('Time')
+plt.ylabel('Probability of Sleep')
+
+plt.legend()
+```
+
+
+---
+
+### Why "Logistic?"
+
+```{python}
+#| eval: true
+#| echo: false
+
+x = np.linspace(-10,10)
+y = 1/(1+np.exp(-x))
+
+plt.plot(x,y, label=r'$1/(1+\exp{-x})')
+plt.legend()
+plt.xlim(-10,10)
+```
+
+The logistic function $f(x) = \frac{1}{1+e^{-x}}$ satisfies the logistic equation $f'(x) = f(x)(1-f(x))$. Sometimes this is called a *sigmoid* because it looks like an S. 
+
+---
+
+### Log odds to probability
+
+We call the ratio of two probabilities $p(A)/p(B)$ the *odds ratio* $\mathscr{O}_{AB}$. If there are only two possibilities, then we have odds $p/(1-p)$.
+
+The logistic function turns log-odds ratios back into probabilities:
+
+$$
+\log{\frac{p}{1-p}} = r = \log{p} - \log{(1-p)}
+$$
+
+so
+
+$$
+\text{sig}(r) = \frac{1}{1 + \exp(-\log(p/(1-p)))}
+$$
+
+$$
+= \frac{1}{1 + (1-p)/p}
+$$
+
+which is just $p$.
+
+(You can in fact pick any function that maps $(-\infty, \infty) \rightarrow (0,1)$, to wrap any function you like - there is no reason that this should just be linear except that it is simplest.)
+
+---
+
+### Logistic Regression: Under the Hood
+
+We model our probabilities as a Bernoulli distribution, where the probability $\theta  = \text{sig}(\mathbf{X}\cdot w)$ - ie a linear model fed through a sigmoid function to make it a probability from 0 to 1.
+
+This has no closed form solution for $w$ but we can fit it numerically by *optimising* the parameters to minimize a *loss function* $\mathscr{L} = \sum_k \ell_k$ where
+
+$$
+\ell_k = \begin{cases}
+-\ln p_k & \text{ if } y_k = 1, \\
+-\ln (1 - p_k) & \text{ if } y_k = 0.
+\end{cases}  
+$$
+
+or 
+
+$$
+\ell_k = -y_k\ln p_k - (1 - y_k)\ln (1 - p_k)
+$$
+
+which is called the *cross-entropy* of the predicted distribution from the actual distribution.
+
+---
+
+### Gradient Descent
+
+Unlike with linear least squares, we can't optimize this cost function analytically. 
+
+But we can solve it by *gradient descent*, by taking many small steps that make the loss function smaller. 
+
+In this case, we know the exact gradient analytically
+
+$$
+\dfrac{\partial \mathscr{L}}{\partial w} \propto \mathbf{X} \cdot (\text{sig}(w^T \mathbf{X}) - \mathbf{Y})
+$$
+
+so we can repeatedly evaluate the model, take a small step to improve the model, and evaluate it again.
+
+In this case we have a really simple model and loss function, so with pen and paper we can calculate the gradients. 
+
+---
+
+### What if we didn't know the gradient?
+
+:::: {.columns}
+
+::: {.column width="50%"}
+If we had a more complicated model, we can still do this with **autodiff**: billions of dollars have been invested in packages like [PyTorch](https://pytorch.org/) and [Jax](https://docs.jax.dev/en/latest/index.html) which do all the same things as `numpy` but can also calculate gradients by the chain rule, for arbitrary functions.
+
+Getting good at PyTorch (used more in production code) or Jax (used more in research) is essential to becoming a machine learning engineer or researcher - and *very* likely to improve your career!
+:::
+
+::: {.column width="50%"}
+```{python}
+import jax.numpy as jnp # same interface as numpy!
+from jax import grad # this is magic
+#| eval: true
+#| echo: true
+def sigmoid(x):
+    return 1 / (1 + jnp.exp(-x))
+
+def analytic_gradient(x):
+    y = sigmoid(x)
+    return y*(1-y)
+
+autodiff = grad(sigmoid)
+```
+
+```{python}
+#| eval: true
+#| echo: false
+#| fig-align: 'center'
+
+from jax import vmap
+xxx = jnp.linspace(-10,10,1000)
+yyy = sigmoid(xxx)
+
+plt.plot(xxx,yyy,label='Sigmoid')
+plt.plot(xxx,analytic_gradient(xxx),label='Analytic Gradient')
+plt.plot(xxx,vmap(autodiff)(xxx)+0.1,'--',label='Autodiff + 0.1')
+plt.legend()
+plt.xlim(-10,10)
+```
+:::
+
+::::
+
+
+
+
+---
+
+### This is AI
+
+This is actually a single-layer neural network: we have *weights* $w$ applied to data $X$ as a *linear layer*, which we then pass through a nonlinear function - in this case a sigmoid function - which in AI we call an *activation*. 
+
+We *train* this by *gradient descent*.
+
+A *neural network* is when you have a stack of linear layers and activations -- there is a huge amount of science in how to stack them, and what the layers and activations should look like -- trained by gradient descent with respect to data. 
+
+There is a remarkable theorem - these are *universal approximators*. Any function can be approximated to an arbitrary accuracy by an appropriately trained neural network!
+
+You're already learning AI!
+
+
+---
+
+##  
+::: {.columns .v-center-container}
+::: {.column width="35%"}
+![](_extensions/mq/MQ-diag-partial.png)
+:::
+<!-- 
+The above code needs an Internet connection to work. If you want to compile your work locally, a copy of the image can be found in the _extensions folder. 
+You can assessing it by adopting the following:
+![](_extensions/thomas-fung/mq/MQ-diag-partial.png) -->
+::: {.column width="65%"}
+[Recap]{.section-header-text}
+:::
+:::
+
+---
+
+### Today we have learned
+
+- Linear regression
+    - with `sklearn`
+    - with pen and paper
+    - with `numpy`
+- Logistic regression
+    - with `sklearn`
+    - with gradient descent
+    - what a neural network is!
